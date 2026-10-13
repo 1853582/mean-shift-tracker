@@ -95,3 +95,11 @@ $$
 ## 许可
 
 本项目为学术课程作业，仅供学习与研究使用。
+
+## 运行前准备
+
+1. 将 `Source` 目录加入 MATLAB 路径，例如在项目根目录执行 `addpath('Source')`，然后在 MATLAB 中运行 `main.m`。
+2. `main.m` 中的路径均为相对路径，需要按本机环境调整（以源码实际内容为准）：
+   - 初始帧：`target_frame = imread('./LabImages/Frame0085.png')`，请改为本机实际存放初始帧的路径。
+   - 帧序列目录：`path = './Frames'`，循环范围为 `85:1:285`，帧命名格式为 `Frame%04d.png`（如 `Frame0085.png`）；若改用 `ThreePastShop1cor` 或 `ropeframes` 序列，需同步切换被注释的 `path` 与帧命名格式。
+   - 结果输出目录：`result_path = './Frames/Result'`，请确认该目录已存在，避免 `saveas` 保存失败。
