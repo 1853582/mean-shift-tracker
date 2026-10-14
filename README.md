@@ -34,6 +34,40 @@ Source/
 └── weight_histogram.m          # 对直方图施加核权重
 ```
 
+## 架构图
+
+系统分为三层：**入口层**（`main.m`）负责读取帧序列、框选目标并驱动整个跟踪流程；**核心层**（`mean_shift.m`）实现 Mean-Shift 迭代跟踪；**基础工具层**提供可复用的直方图、核函数、坐标计算等纯函数。
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       入口层 · main.m                       │
+│                                                             │
+│  读取初始帧 → imshow + getrect 框选目标                     │
+│  → 构建目标模型 → 逐帧调用 mean_shift → 绘制并保存结果帧    │
+└──────────────┬───────────────────────────────┬──────────────┘
+               │ 目标建模（初始帧，一次性）    │ 逐帧跟踪
+               ▼                               ▼
+┌──────────────┬──────────────┐ ┌──────────────┬──────────────┐
+│ 目标模型构建（q）           │ │ mean_shift.m 核心迭代       │
+│ get_target_image            │ │ get_target_image            │
+│ RGB2rgb                     │ │ im_weighted_2D_histogram(p) │
+│ kernel_mask → epanechnikov  │ │ bhattacharyya_coef ρ(p,q)   │
+│ im_weighted_2D_histogram(q) │ │ compute_weights → 权重 w    │
+│ get_coordinates2            │ │ get_coordinates3 → y1       │
+└──────────────┬──────────────┘ └──────────────┬──────────────┘
+               │ q（目标直方图）               │ y1（新中心）
+               ▼                               ▼
+┌──────────────┬───────────────────────────────┬──────────────┐
+│                  基础工具层（可复用函数）                   │
+│  RGB2rgb · kernel_mask · epanechnikov · get_center          │
+│  im_weighted_2D_histogram · bhattacharyya_coef              │
+│  compute_weights · get_coordinates2 · get_coordinates3      │
+│  hist_back_propagate · weight_histogram                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+数据流：`main.m` 在初始帧上构建目标直方图 `q`（仅一次）；后续每帧将 `q` 与当前帧传入 `mean_shift.m`，迭代计算候选直方图 `p` → 相似度 `ρ(p,q)` → 像素权重 `w` → 新中心 `y₁`，直至收敛或达到最大迭代次数（10 次），返回的新中心用于更新目标矩形并保存结果帧。
+
 ## 使用方法
 
 ### 环境要求
